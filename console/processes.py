@@ -13,6 +13,7 @@ DB_DIR = DATA / "mariadb"
 DB_SOCKET = DB_DIR / "mysqld.sock"
 LOGS = DATA / "logs"
 EVENTS_FILE = DATA / "events.jsonl"
+ACTUAL = DATA / "actual"
 
 DB_PORT = 3306
 PARTNER_PORT = 8082
@@ -56,6 +57,7 @@ class Processes:
 
     def reset_data(self):
         shutil.rmtree(DB_DIR, ignore_errors=True)
+        shutil.rmtree(ACTUAL, ignore_errors=True)
         LOGS.mkdir(parents=True, exist_ok=True)
         EVENTS_FILE.write_text("")
 
@@ -77,7 +79,7 @@ class Processes:
         self._wait_for_port("partner", PARTNER_PORT)
 
     def start_service(self, mode, recordings, events=True, demo_break=False):
-        env = {"REGTESTS_MODE": mode, "REGTESTS_RECORDINGS": str(recordings)}
+        env = {"REGTESTS_MODE": mode, "REGTESTS_RECORDINGS": str(recordings), "REGTESTS_ACTUAL": str(ACTUAL)}
         if events:
             env["REGTESTS_EVENTS"] = str(EVENTS_FILE)
         if demo_break:

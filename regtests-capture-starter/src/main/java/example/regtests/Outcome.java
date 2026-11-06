@@ -32,6 +32,11 @@ final class Outcome {
         this.out = out;
     }
 
+    /** Nothing at all, for a call the recording has no answer to. */
+    static Outcome none() {
+        return new Outcome(List.of(), Map.of());
+    }
+
     /** A single result set or update count, from executeQuery or executeUpdate. */
     static Outcome of(Object result) {
         return new Outcome(List.of(result), Map.of());

@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 
-from processes import APP, DATA, EVENTS_FILE, Processes
+from processes import ACTUAL, APP, DATA, EVENTS_FILE, Processes
 from server import serve
 from stages import EventTail, post_quote, sample_requests, seed_config
 
@@ -26,7 +26,7 @@ def run_tests():
     try:
         processes.start_service("replay", recordings, events=False,
                                 demo_break=os.environ.get("DEMO_BREAK") == "true")
-        env = {**os.environ, "REGTESTS_RECORDINGS": str(recordings)}
+        env = {**os.environ, "REGTESTS_RECORDINGS": str(recordings), "REGTESTS_ACTUAL": str(ACTUAL)}
         return subprocess.call([sys.executable, "-m", "pytest", "tests", "-v", "--tb=short", "-p", "no:cacheprovider"],
                                cwd=APP, env=env)
     finally:

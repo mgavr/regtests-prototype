@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -38,7 +39,7 @@ final class CaseFiles {
         return isSafeName(caseName) && Files.isRegularFile(root.resolve(caseName).resolve(INBOUND));
     }
 
-    // REG-13: the case is saved, one folder with three files. inbound.json goes last, so a folder that has it is complete.
+    // REG-13: the case is saved, one folder with three files. Replay writes down what the service did through this same code, so a run has the same format. inbound.json goes last, so a folder that has it is complete.
     Path save(String caseName, JsonNode inbound, JsonNode http, JsonNode jdbc) {
         Path folder = root.resolve(caseName);
         try {
@@ -67,6 +68,8 @@ final class CaseFiles {
     }
 
     private static void write(Path file, JsonNode content) throws IOException {
-        Files.writeString(file, Json.MAPPER.writeValueAsString(content) + "\n");
+        Path temp = file.resolveSibling(file.getFileName() + ".tmp");
+        Files.writeString(temp, Json.MAPPER.writeValueAsString(content) + "\n");
+        Files.move(temp, file, StandardCopyOption.ATOMIC_MOVE); // A reader never sees half a file.
     }
 }

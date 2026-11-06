@@ -72,11 +72,11 @@ class JdbcReplayTest {
             assertThat(call.getInt(2)).isEqualTo(42);
             assertThat(call.wasNull()).isFalse();
         }
-        assertThat(session.report(false).passed()).isTrue();
+        assertThat(session.jdbcCalls()).singleElement().satisfies(written -> assertThat(written.out()).hasSize(1));
     }
 
     @Test
-    void aChangedInParameterIsADifference() throws SQLException {
+    void aChangedInParameterIsStillAnsweredAndWrittenDownAsItWas() throws SQLException {
         Regtests regtests = Fixtures.regtests(RegtestsMode.REPLAY, recordings);
         ReplaySession session = Fixtures.replay(regtests, List.of(), List.of(procedureCall()));
         Session.bind(session);
@@ -84,15 +84,10 @@ class JdbcReplayTest {
         try (Connection connection = JdbcReplay.dataSource(regtests).getConnection();
              CallableStatement call = connection.prepareCall(CALL)) {
             call.setLong(1, 8);
-            call.execute();
+            assertThat(call.execute()).isTrue();
         }
-        ReplayReport report = session.report(false);
-        assertThat(report.passed()).isFalse();
-        assertThat(report.differences()).singleElement().satisfies(found -> {
-            assertThat(found.path()).isEqualTo("parameter 1");
-            assertThat(found.expected()).isEqualTo("7");
-            assertThat(found.actual()).isEqualTo("8");
-        });
+        assertThat(session.jdbcCalls()).singleElement()
+                .satisfies(written -> assertThat(written.params().get(0).asInt()).isEqualTo(8));
     }
 
     @Test
@@ -104,11 +99,12 @@ class JdbcReplayTest {
         int changed = new JdbcTemplate(JdbcReplay.dataSource(regtests)).update(INSERT, 1, "a");
 
         assertThat(changed).isEqualTo(1);
-        assertThat(session.report(false).passed()).isTrue();
+        assertThat(session.jdbcCalls()).singleElement()
+                .satisfies(written -> assertThat(written.sql()).isEqualTo(INSERT));
     }
 
     @Test
-    void anUnexpectedCallFailsLoudlyEvenIfTheServiceSwallowsIt() {
+    void anUnexpectedCallFailsLoudlyAndIsWrittenDownWithNoAnswer() {
         Regtests regtests = Fixtures.regtests(RegtestsMode.REPLAY, recordings);
         ReplaySession session = Fixtures.replay(regtests, List.of(), List.of());
         Session.bind(session);
@@ -117,18 +113,25 @@ class JdbcReplayTest {
         assertThatThrownBy(() -> jdbc.update("DELETE FROM thing"))
                 .isInstanceOf(UnexpectedCallException.class)
                 .hasMessageContaining("DELETE FROM thing");
-        assertThat(session.report(false).passed()).isFalse();
-        assertThat(session.report(false).unexpectedCalls()).hasSize(1);
+        assertThat(session.jdbcCalls()).singleElement()
+                .satisfies(written -> assertThat(written.results()).isEmpty());
     }
 
     @Test
-    void aRecordedCallThatIsNeverMadeFailsTheCase() {
+    void aRunIsWrittenInTheRecordingFormatUnderItsRunId() {
         Regtests regtests = Fixtures.regtests(RegtestsMode.REPLAY, recordings);
+        ReplaySession session = Fixtures.replay(regtests, List.of(), List.of(insertCall(1, 1)));
+        Session.bind(session);
+        new JdbcTemplate(JdbcReplay.dataSource(regtests)).update(INSERT, 1, "a");
+        session.captureInbound(new Model.InboundRequest("POST", "/x", null, null, Json.parseBody("")), 200, null, "{}");
+        session.noteError("it broke");
 
-        ReplayReport report = Fixtures.replay(regtests, List.of(), List.of(insertCall(1, 1))).report(false);
+        session.save(regtests.runs());
 
-        assertThat(report.passed()).isFalse();
-        assertThat(report.missingCalls()).containsExactly(INSERT);
+        Model.RecordedCase written = regtests.runs().load("run-1");
+        assertThat(written.inbound().caseName()).isEqualTo("a-case");
+        assertThat(written.inbound().error()).isEqualTo("it broke");
+        assertThat(written.jdbc()).singleElement().satisfies(call -> assertThat(call.sql()).isEqualTo(INSERT));
     }
 
     @Test
@@ -159,7 +162,7 @@ class JdbcReplayTest {
 
         assertThat(updated).isEqualTo(3);
         assertThat(inserted).isEqualTo(1);
-        assertThat(session.report(false).passed()).isTrue();
+        assertThat(session.jdbcCalls()).hasSize(2);
     }
 
     @Test

@@ -14,7 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** Collects everything that crosses the service's edge during one request, already masked. */
-final class RecordSession extends Session {
+class RecordSession extends Session {
 
     private final String caseName;
     private final Scrubber scrubber;
@@ -23,6 +23,7 @@ final class RecordSession extends Session {
     private final List<JdbcCall> jdbcCalls = new CopyOnWriteArrayList<>();
     private volatile InboundRequest request;
     private volatile InboundResponse response;
+    private volatile String error;
 
     RecordSession(String requestId, String caseName, Scrubber scrubber) {
         super(requestId);
@@ -30,18 +31,31 @@ final class RecordSession extends Session {
         this.scrubber = scrubber;
     }
 
-    String caseName() {
+    final String caseName() {
         return caseName;
     }
 
-    void captureInbound(InboundRequest captured, int status, String contentType, String body) {
+    final List<HttpCall> httpCalls() {
+        return httpCalls;
+    }
+
+    final List<JdbcCall> jdbcCalls() {
+        return jdbcCalls;
+    }
+
+    final void captureInbound(InboundRequest captured, int status, String contentType, String body) {
         request = new InboundRequest(captured.method(), captured.path(), captured.query(), captured.contentType(),
                 scrubber.json(captured.body()));
         response = new InboundResponse(status, contentType, scrubber.json(Json.parseBody(body)));
     }
 
-    HttpCall recordHttp(String method, String url, String requestBody, int status, String contentType,
-                        String responseBody) {
+    /** What the service threw. An outbound call no hook caught ends up here, naming its host. */
+    final void noteError(String message) {
+        error = message;
+    }
+
+    final HttpCall recordHttp(String method, String url, String requestBody, int status, String contentType,
+                              String responseBody) {
         HttpCall call = new HttpCall(sequence.incrementAndGet(), Thread.currentThread().getName(), method, url,
                 scrubber.json(Json.parseBody(requestBody)), status, contentType,
                 scrubber.json(Json.parseBody(responseBody)));
@@ -49,7 +63,7 @@ final class RecordSession extends Session {
         return call;
     }
 
-    JdbcCall recordJdbc(String sql, JsonNode params, Outcome outcome) {
+    final JdbcCall recordJdbc(String sql, JsonNode params, Outcome outcome) {
         String text = SqlText.normalize(sql);
         JdbcCall call = new JdbcCall(sequence.incrementAndGet(), Thread.currentThread().getName(), text,
                 scrubber.params(text, params), outcome.outValues(text, scrubber), outcome.resultValues(scrubber));
@@ -57,13 +71,17 @@ final class RecordSession extends Session {
         return call;
     }
 
-    int maskedSoFar() {
+    final int maskedSoFar() {
         return Scrubber.countMasked(Json.MAPPER.valueToTree(List.of(request, response, httpCalls, jdbcCalls)));
     }
 
     Path save(CaseFiles files) {
-        Inbound inbound = new Inbound(caseName, requestId(), Instant.now().toString(), request, response);
-        return files.save(caseName, Json.MAPPER.valueToTree(inbound), Json.MAPPER.valueToTree(httpCalls),
+        return saveAs(caseName, files);
+    }
+
+    final Path saveAs(String folderName, CaseFiles files) {
+        Inbound inbound = new Inbound(caseName, requestId(), Instant.now().toString(), request, response, error);
+        return files.save(folderName, Json.MAPPER.valueToTree(inbound), Json.MAPPER.valueToTree(httpCalls),
                 Json.MAPPER.valueToTree(jdbcCalls));
     }
 }

@@ -9,7 +9,7 @@ import time
 import urllib.error
 import urllib.request
 
-from processes import APP, DATA, DB_PORT, EVENTS_FILE, PARTNER_PORT, SERVICE_PORT, Processes, find_pids, port_open
+from processes import ACTUAL, APP, DATA, DB_PORT, EVENTS_FILE, PARTNER_PORT, SERVICE_PORT, Processes, find_pids, port_open
 
 RECORDINGS = DATA / "recordings"
 THIS_FILE = "console/stages.py"
@@ -167,8 +167,8 @@ class Demo:
                  "One line of pricing now adds the discount instead of taking it off. Nothing else changed.")
 
     def run_test(self):
-        env = {**os.environ, "REGTESTS_RECORDINGS": str(RECORDINGS), "REGTESTS_EVENTS": str(EVENTS_FILE),
-               "REGTESTS_ONLY_CASE": sample_requests()["live"]["case"]}
+        env = {**os.environ, "REGTESTS_RECORDINGS": str(RECORDINGS), "REGTESTS_ACTUAL": str(ACTUAL),
+               "REGTESTS_EVENTS": str(EVENTS_FILE), "REGTESTS_ONLY_CASE": sample_requests()["live"]["case"]}
         subprocess.run([sys.executable, "-m", "pytest", "tests/test_replay.py", "-q", "--tb=short", "-p", "no:cacheprovider"],
                        cwd=APP, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 

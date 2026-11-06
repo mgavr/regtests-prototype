@@ -16,6 +16,9 @@ public class RegtestsProperties {
     /** Folder that holds one sub-folder per case. */
     private String recordings = "recordings";
 
+    /** Folder where replay writes down what the service did, one sub-folder per run. */
+    private String actual = "actual";
+
     /** Optional JSON-lines file that receives one event per step. Unset means no events. */
     private String events;
 
@@ -39,6 +42,14 @@ public class RegtestsProperties {
 
     public void setRecordings(String recordings) {
         this.recordings = recordings;
+    }
+
+    public String getActual() {
+        return actual;
+    }
+
+    public void setActual(String actual) {
+        this.actual = actual;
     }
 
     public String getEvents() {

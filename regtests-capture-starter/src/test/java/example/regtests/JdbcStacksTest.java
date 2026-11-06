@@ -19,6 +19,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -78,12 +79,17 @@ class JdbcStacksTest {
         Session.unbind();
     }
 
-    private ReplayReport replay(Regtests regtests, Runnable work) {
-        ReplaySession session = new ReplaySession("run", regtests.files().load("stack-case"), regtests.scrubber(), regtests.comparer());
+    /** Replays, then checks the calls written down are the ones recorded, in the same order. */
+    private void replay(Regtests regtests, Runnable work) {
+        ReplaySession session = new ReplaySession("run", regtests.files().load("stack-case"), regtests.scrubber());
         Session.bind(session);
         work.run();
         Session.unbind();
-        return session.report(false);
+        List<Model.JdbcCall> recorded = regtests.files().load("stack-case").jdbc();
+        assertThat(session.jdbcCalls()).extracting(Model.JdbcCall::sql)
+                .isEqualTo(recorded.stream().map(Model.JdbcCall::sql).toList());
+        assertThat(session.jdbcCalls()).extracting(Model.JdbcCall::params)
+                .isEqualTo(recorded.stream().map(Model.JdbcCall::params).toList());
     }
 
     @Test
@@ -104,13 +110,11 @@ class JdbcStacksTest {
         replaying().run(context -> {
             JdbcTemplate jdbc = context.getBean(JdbcTemplate.class);
             String[] replayed = new String[1];
-            ReplayReport report = replay(context.getBean(Regtests.class), () -> {
+            replay(context.getBean(Regtests.class), () -> {
                 jdbc.update(insert, "a", "first");
                 replayed[0] = jdbc.queryForObject(select, String.class, "a");
             });
             assertThat(replayed[0]).isEqualTo("first");
-            assertThat(report.differences()).isEmpty();
-            assertThat(report.missingCalls()).isEmpty();
         });
     }
 
@@ -124,13 +128,11 @@ class JdbcStacksTest {
 
         replaying().run(context -> {
             assertThat(context).hasNotFailed();
-            ReplayReport report = replay(context.getBean(Regtests.class), () -> {
+            replay(context.getBean(Regtests.class), () -> {
                 StackThing found = saveAndFind(context.getBean(TransactionTemplate.class),
                         context.getBean(Entities.class).entityManager);
                 assertThat(found.label).isEqualTo("first");
             });
-            assertThat(report.differences()).isEmpty();
-            assertThat(report.missingCalls()).isEmpty();
         });
     }
 

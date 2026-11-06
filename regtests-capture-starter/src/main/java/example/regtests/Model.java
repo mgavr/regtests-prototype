@@ -12,10 +12,10 @@ final class Model {
     private Model() {
     }
 
-    /** inbound.json: what came in and what went back. */
+    /** inbound.json: what came in and what went back. {@code error} appears only in a replay run. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Inbound(@JsonProperty("case") String caseName, String requestId, String recordedAt,
-                   InboundRequest request, InboundResponse response) {
+                   InboundRequest request, InboundResponse response, String error) {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -120,15 +119,14 @@ class HttpHooksTest {
         assertThat(hits).hasValue(1);
 
         Regtests replaying = Fixtures.regtests(RegtestsMode.REPLAY, recordings);
-        ReplaySession replay = new ReplaySession("run", replaying.files().load("a-case"), replaying.scrubber(), replaying.comparer());
+        ReplaySession replay = new ReplaySession("run", replaying.files().load("a-case"), replaying.scrubber());
         Session.bind(replay);
 
         String replayed = client.fetch().get(replaying, url);
 
         assertThat(replayed).isEqualTo(recorded).isEqualTo("{\"answer\":1}");
         assertThat(hits).hasValue(1);
-        assertThat(replay.report(false).differences()).isEmpty();
-        assertThat(replay.report(false).missingCalls()).isEmpty();
+        assertThat(replay.httpCalls()).singleElement().satisfies(written -> assertThat(written.status()).isEqualTo(200));
     }
 
     @Test
@@ -138,24 +136,5 @@ class HttpHooksTest {
         assertThat(viaOkHttp(url)).isEqualTo("{\"answer\":1}");
         assertThat(viaApache(url)).isEqualTo("{\"answer\":1}");
         assertThat(hits).hasValue(2);
-    }
-
-    @Test
-    void aChangedQueryIsADifference() throws Exception {
-        Regtests recording = Fixtures.regtests(RegtestsMode.RECORD, recordings);
-        RecordSession session = new RecordSession("id", "a-case", recording.scrubber());
-        Session.bind(session);
-        viaOkHttp(url);
-        session.captureInbound(new InboundRequest("GET", "/x", null, null, Json.parseBody("")), 200, null, "");
-        session.save(recording.files());
-        Session.unbind();
-
-        Regtests replaying = Fixtures.regtests(RegtestsMode.REPLAY, recordings);
-        ReplaySession replay = new ReplaySession("run", replaying.files().load("a-case"), replaying.scrubber(), replaying.comparer());
-        Session.bind(replay);
-        viaOkHttp(url.replace("a=1", "a=2"));
-
-        assertThat(replay.report(false).differences()).singleElement()
-                .satisfies(found -> assertThat(List.of(found.expected(), found.actual())).containsExactly("a=1", "a=2"));
     }
 }

@@ -35,6 +35,8 @@ COPY demo-service/src/main source/demo-service/src/main
 COPY tests source/tests
 COPY console/stages.py source/console/stages.py
 RUN python3 console/make_snippets.py source console/static/snippets.json
+# The comparison rules need no service, so a failure here fails the image too.
+RUN python3 -m pytest -q -p no:cacheprovider tests/test_compare.py
 
 EXPOSE 8080
 ENTRYPOINT ["python3", "/app/console/cli.py"]

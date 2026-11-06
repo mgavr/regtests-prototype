@@ -33,8 +33,8 @@ From the repo folder:
 docker build -t regtests-prototype .
 ```
 
-The first build takes about a minute on a fast connection, longer on a slow one. It compiles everything and runs all the Java unit tests.
-A failing test fails the build. You should finish with `naming to docker.io/library/regtests-prototype`.
+The first build takes about a minute on a fast connection, longer on a slow one. It compiles
+everything and runs the Java and Python unit tests. A failing test fails the build. You should finish with `naming to docker.io/library/regtests-prototype`.
 
 ```
 docker run --rm -p 8080:8080 regtests-prototype
@@ -64,7 +64,8 @@ uses both in the same request, and both are captured by the same hook.
 **2. Replay.** The database and the partner are stopped, and the page shows them STOPPED. The
 service starts anyway, because a fake `DataSource` replaces the real one and never connects. A
 Python test sends the recorded request. Every database call and partner call is answered from the
-recording. The response and every attempted call are compared with the recording. PASS.
+recording, and the library writes down what the service did. It makes no judgement. The Python
+runner reads that back and compares the response and every attempted call with the recording. PASS.
 
 **3. Break it.** The service restarts with `DEMO_BREAK=true`, which flips one line of pricing. The
 same test now fails, and the page shows exactly what changed:
@@ -142,8 +143,9 @@ In this demo the partner being down guarantees that. In your CI, run replay with
 example `docker run --network none`. Otherwise an unhooked client could reach a real host and pass
 without anyone noticing.
 
-Two things are optional. `REGTESTS_RECORDINGS` sets the recordings folder (default `recordings`).
-A `regtests.json` file in that folder tunes the comparison and the masking, with no code. See
+Three things are optional. `REGTESTS_RECORDINGS` sets the recordings folder (default `recordings`).
+`REGTESTS_ACTUAL` sets where replay writes down what the service did (default `actual`). A
+`regtests.json` file in the recordings folder tunes the comparison and the masking, with no code. See
 [What may differ between runs](#what-may-differ-between-runs).
 
 ## Run the tests without the page
@@ -155,8 +157,9 @@ partner, and here no network at all:
 docker run --rm --network none regtests-prototype test
 ```
 
-You should see `7 passed`: the four recorded cases, a check that the database and partner are down,
-a check that an unexpected call fails loudly, and a check that a request naming no case is refused.
+You should see `21 passed`: 14 tests of the comparison rules, the four recorded cases, a check that
+the database and partner are down, a check that an unexpected call fails loudly, and a check that a
+request naming no case is refused.
 
 To see which cases a regression touches:
 
@@ -164,7 +167,7 @@ To see which cases a regression touches:
 docker run --rm -e DEMO_BREAK=true regtests-prototype test
 ```
 
-Now `2 failed, 5 passed`. The gold and silver customers get a discount, so the changed rule affects
+Now `2 failed, 19 passed`. The gold and silver customers get a discount, so the changed rule affects
 them. The standard customer and the unknown customer don't, and they still pass.
 
 To record the example cases again from a real run:
@@ -187,17 +190,71 @@ recordings/
   silver-car-quote/
   standard-travel-quote/
   unknown-customer/
+
+actual/
+  3f9a1c2e/                  one replay run, named by its run id, with the same three files
 ```
+
+A recording is what the service did once. A run in `actual/` is what the new build did this time.
+They have the same format, so comparing them needs nothing from the library. Runs aren't committed.
+
+### The format
+
+Every file is UTF-8 JSON, and personal data is masked before it is written.
+
+**`inbound.json`** is one object:
+
+| Field | Meaning |
+|---|---|
+| `case` | The case name |
+| `requestId` | The id given to this request. In a run, this is the run id |
+| `recordedAt` | When it was written, as an ISO timestamp |
+| `request` | `method`, `path`, `query` (left out if there is none), `contentType` and `body` |
+| `response` | `status`, `contentType` and `body` |
+| `error` | In a run only, and only if the service threw: the error message |
+
+**`outbound-http.json`** is an array with one object per call:
+
+| Field | Meaning |
+|---|---|
+| `seq` | The call's place in the request, counted across this file and `sql.json`, from 1 |
+| `thread` | Where it ran. For reading only |
+| `method`, `url` | The call, with its full URL and query |
+| `requestBody` | The body sent |
+| `status`, `contentType`, `responseBody` | The answer |
+
+**`sql.json`** is an array with one object per database call, whether plain SQL or a procedure:
+
+| Field | Meaning |
+|---|---|
+| `seq`, `thread` | As above |
+| `sql` | The statement, with each run of whitespace turned into one space |
+| `params` | IN values by position. An OUT position holds null, and trailing ones may be left off |
+| `out` | One `{position, value, javaType}` for each OUT parameter |
+| `results` | Everything the call returned, in order. Each is a result set, `{columns, rows}`, or `{updateCount}` |
+
+Three rules apply to values:
+
+- A `body` is parsed JSON if the text is JSON, a string if it isn't, and null or left out if empty.
+- Numbers keep their exact decimal value. Dates and times are ISO text.
+- `columns` is a list of `{name, javaType, sqlType}`, and `rows` a list of arrays in column order.
+
+Two things are special in a run. A call the recording could not answer is still listed, with
+`status` 0 for HTTP, or empty `out` and `results` for a database call. And `error` may be present.
+
+The Python runner reads only `case`, `response`, `error`, `seq`, `method`, `url`, `requestBody`, `sql`
+and `params`. The rest is there for the library, to answer with in replay. So `javaType` and `sqlType`
+belong to the library that wrote them: a library in another language keeps its own type names there.
 
 Here is one entry from `sql.json`, a stored procedure with IN and OUT parameters and a result set.
 The comments are added here. The real files are plain JSON.
 
 ```jsonc
 {
-  "seq": 2,                                   // order of capture, for reading only
+  "seq": 2,                                   // its place in the request
   "thread": "http-nio-8081-exec-2",           // where it ran, for reading only
-  "sql": "{call get_discount_rules( ?, ?)}",  // the key: replay matches on this text
-  "params": ["GOLD"],                         // IN values by position, compared in replay
+  "sql": "{call get_discount_rules( ?, ?)}",  // the key: this text is how calls line up
+  "params": ["GOLD"],                         // IN values by position, compared by the runner
   "out": [                                    // OUT parameters, handed back in replay
     { "position": 2, "javaType": "java.lang.Integer", "value": 2 }
   ],
@@ -221,7 +278,8 @@ a name read from the database and sent on to the partner still matches in replay
 ## What may differ between runs
 
 Every run generates new ids and timestamps, so a plain comparison would always fail. What counts as
-noise depends on the team, so nothing here is hard-coded per case. There are two layers:
+noise depends on the team, so nothing here is hard-coded per case. The Python runner applies two
+layers, in `tests/compare.py`:
 
 1. **A default normaliser.** ISO timestamps and UUIDs are treated as equal wherever they appear.
    This needs no setup.
@@ -249,6 +307,7 @@ a timestamp, so the default can't know about it. `ignore` says to skip that JSON
 parameter 2 of `create_quote`. SQL rules are keyed by any text found in the statement, and count
 parameters from 1.
 
+`personal` is the one section the capture library reads, because masking happens at capture.
 `personal.fields` adds to the names masked with no config: `fullName`, `firstName`, `lastName`,
 `email`, `phone`, `address` and `dateOfBirth`. These match JSON fields and SQL column names alike,
 so `full_name` matches `fullName`. Parameters have no names at the JDBC level, so a personal value
@@ -278,7 +337,7 @@ this tour only, and a real service needs none.
 | REG-10 | `…/RequestIdTaskDecorator.java` | The request id is carried into `@Async` work |
 | REG-11 | `…/Scrubber.java` | Personal data is masked at capture, one mask everywhere |
 | REG-12 | `…/RegtestsFilter.java` | The response is captured and released to the caller |
-| REG-13 | `…/CaseFiles.java` | The case is saved to disk |
+| REG-13 | `…/CaseFiles.java` | The case is saved to disk. A replay run is written by the same code |
 | REG-14 | `console/stages.py` | The database and partner are really stopped, then checked |
 | REG-15 | `…/DataSourcePostProcessor.java` | In replay, the `DataSource` is swapped for the fake |
 | REG-16 | `tests/test_replay.py` | The Python test sends the recorded request |
@@ -287,8 +346,8 @@ this tour only, and a real service needs none.
 | REG-19 | `…/JdbcReplay.java` | The fake database answers, and can't connect to anything |
 | REG-20 | `…/OutboundHttp.java` | An outbound call is answered from the recording |
 | REG-21 | `…/WebClientCaptureFilter.java` | The same for WebClient |
-| REG-22 | `…/ReplaySession.java` | A call not in the recording fails loudly |
-| REG-23 | `…/Comparer.java` | The response and attempted calls are compared |
+| REG-22 | `…/ReplaySession.java` | A call not in the recording is written down and fails loudly |
+| REG-23 | `tests/compare.py` | The Python runner compares the run with the recording |
 | REG-24 | `tests/test_replay.py` | The verdict: pass, or fail with each difference spelled out |
 | REG-25 | `demo-service/src/main/java/example/quotes/QuoteService.java` | The deliberate one-line regression |
 
@@ -302,10 +361,51 @@ this tour only, and a real service needs none.
 4. Read the recordings. Check that no personal data got through, and fill in `regtests.json`.
 5. Commit the recordings.
 6. In CI, start the new build with `REGTESTS_MODE=replay` and no network, then run
-   `tests/test_replay.py` with `SERVICE_URL` and `REGTESTS_RECORDINGS` set. Change the two ports in
-   `test_database_and_partner_are_down` to match your service.
+   `tests/test_replay.py` with `SERVICE_URL`, `REGTESTS_RECORDINGS` and `REGTESTS_ACTUAL` set. The
+   test reads what the service writes, so both need to see those two folders. Change the two ports
+   in `test_database_and_partner_are_down` to match your service.
 
 Run `record` in a test environment only. It keeps bodies and rows in memory and writes them to disk.
+
+## Other languages
+
+There is one capture library so far, for Java. Libraries for Python and TypeScript services are
+planned, so comparison rules live in one place. A library only records and answers.
+
+**Shared by every language, written once:**
+
+- The Python tests in `tests/`, which send each recorded request and read back the run.
+- The test generator: `discover_cases()` in `tests/test_replay.py` makes one test per case folder,
+  so nobody writes a test by hand.
+- All comparing, in `tests/compare.py`: the normaliser, the `regtests.json` rules, the expected and
+  got report, and unexpected and never-made calls.
+- The recording format described in [The format](#the-format).
+- The `X-Regtests-Case` header, which names a case.
+
+**What a new library must do:**
+
+1. Read `REGTESTS_MODE`. With `off`, or with no setting, it must do nothing at all.
+2. Hook inbound requests. Give each one an id, and keep that id with the work, including work
+   handed to other threads or tasks.
+3. Hook outbound calls at the lowest layer the language's clients share, as `DataSource` is for Java.
+4. Mask at capture. A mask is `masked:` plus the first 12 hex digits of the SHA-256 of
+   `salt:value`, and a value that already starts with `masked:` stays as it is. Mask the fields and
+   parameters named in the `personal` section of `regtests.json`.
+5. In `record`, write a case folder under `REGTESTS_RECORDINGS`, named by the `X-Regtests-Case`
+   header, or with a generated name if there is no header.
+6. In `replay`, refuse a request with no `X-Regtests-Case` header with HTTP 400, and one naming an
+   unknown case with HTTP 404.
+7. In `replay`, never connect to anything. Keep one queue of recorded calls per key, oldest first,
+   and answer from it. The key is the `sql` text for a database call, and the method and URL path
+   for an HTTP call.
+8. In `replay`, a call with no answer left must be written down, then fail inside the service,
+   because there is nothing to answer it with.
+9. In `replay`, set the response header `X-Regtests-Run` to a new run id. Once the response is out
+   and async work has finished, write the run to `REGTESTS_ACTUAL/<run id>/`.
+10. Write `inbound.json` last, and atomically: write it under another name, then rename it. The
+    runner takes that file as the sign that a folder is complete.
+
+A library must not compare anything, normalise anything or decide pass or fail.
 
 ## Known limits
 

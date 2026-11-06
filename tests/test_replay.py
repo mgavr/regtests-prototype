@@ -1,7 +1,7 @@
 """Replays recorded cases against a service running with REGTESTS_MODE=replay.
 
-The service answers from the recordings and judges itself. This test sends each recorded
-request, asks for the verdict, and fails with a readable list of differences.
+The service answers from the recordings and writes down what it did. This test sends each
+recorded request, reads that back, and compares the two with compare.py.
 """
 import json
 import os
@@ -14,11 +14,16 @@ import urllib.request
 
 import pytest
 
+from compare import compare_case, load_config
+
 SERVICE = os.environ.get("SERVICE_URL", "http://localhost:8081")
 RECORDINGS = pathlib.Path(os.environ.get("REGTESTS_RECORDINGS", "recordings"))
+ACTUAL = pathlib.Path(os.environ.get("REGTESTS_ACTUAL", "actual"))
 ONLY_CASE = os.environ.get("REGTESTS_ONLY_CASE")
 EVENTS = os.environ.get("REGTESTS_EVENTS")
 THIS_FILE = "tests/test_replay.py"
+COMPARE_FILE = "tests/compare.py"
+RUN_WAIT_SECONDS = 20
 
 
 def discover_cases():
@@ -26,17 +31,17 @@ def discover_cases():
     return [name for name in names if not ONLY_CASE or name == ONLY_CASE]
 
 
-def emit(reg, title, detail, **extra):
+def emit(reg, title, detail, file=THIS_FILE, **extra):
     """Adds a step to the live view, when there is one."""
     if EVENTS:
-        line = {"ts": int(time.time() * 1000), "source": "test", "reg": reg, "file": THIS_FILE,
+        line = {"ts": int(time.time() * 1000), "source": "test", "reg": reg, "file": file,
                 "title": title, "detail": detail, **extra}
         with open(EVENTS, "a", encoding="utf-8") as events:
             events.write(json.dumps(line) + "\n")
 
 
 def send(case_name, request):
-    """Sends one recorded request. Returns the run id that the verdict is filed under."""
+    """Sends one recorded request. Returns the run id, which names the folder the service writes."""
     url = SERVICE + request["path"] + ("?" + request["query"] if request.get("query") else "")
     body = request.get("body")
     outgoing = urllib.request.Request(url, method=request["method"],
@@ -51,14 +56,21 @@ def send(case_name, request):
         return error.headers["X-Regtests-Run"]
 
 
-def fetch_report(run_id):
-    with urllib.request.urlopen(f"{SERVICE}/__regtests/report/{run_id}", timeout=30) as response:
-        return json.load(response)
+def wait_for_run(run_id):
+    """A run folder is complete once it has inbound.json, which the service writes last."""
+    folder = ACTUAL / run_id
+    deadline = time.time() + RUN_WAIT_SECONDS
+    while not (folder / "inbound.json").exists():
+        assert time.time() < deadline, f"the service wrote nothing to {folder}"
+        time.sleep(0.02)
+    return folder
 
 
 def replay(case_name):
-    inbound = json.loads((RECORDINGS / case_name / "inbound.json").read_text())
-    return fetch_report(send(case_name, inbound["request"]))
+    recorded = RECORDINGS / case_name
+    inbound = json.loads((recorded / "inbound.json").read_text())
+    run = wait_for_run(send(case_name, inbound["request"]))
+    return compare_case(recorded, run, load_config(RECORDINGS))
 
 
 def render(report):
@@ -69,8 +81,6 @@ def render(report):
     lines += [f"  Recorded but never made: {call}" for call in report["missingCalls"]]
     if report["serviceError"]:
         lines.append(f"  The service failed with: {report['serviceError']}")
-    if report["timedOut"]:
-        lines.append("  Async work did not finish in time.")
     return "\n".join(lines)
 
 
@@ -78,8 +88,13 @@ def render(report):
 def test_case_replays_identically(case_name):
     # REG-16: the Python test sends the recorded request, naming its case in a header. That header is the only thing that is special about it.
     emit("REG-16", f"Python test sends the case: {case_name}", "POST /quotes with the X-Regtests-Case header.")
-    inbound = json.loads((RECORDINGS / case_name / "inbound.json").read_text())
-    report = fetch_report(send(case_name, inbound["request"]))
+    report = replay(case_name)
+
+    emit("REG-23", f"Response compared: {report['inResponse']} difference(s)" if report["inResponse"] else "Response compared: identical",
+         f"HTTP {report['status']}, checked against inbound.json.", file=COMPARE_FILE)
+    emit("REG-23", f"Attempted calls compared: {report['callsCompared']} calls, {len(report['differences'])} difference(s) in all",
+         "Database calls by procedure and parameters, outbound calls by URL and body. "
+         f"Unexpected: {len(report['unexpectedCalls'])}. Never made: {len(report['missingCalls'])}.", file=COMPARE_FILE)
 
     # REG-24: the verdict. Any difference in the response or in an attempted call fails the test, with each difference spelled out.
     if report["passed"]:
@@ -112,6 +127,7 @@ def test_an_unexpected_call_fails_loudly():
 
         assert not report["passed"]
         assert calls[0]["sql"] in report["unexpectedCalls"][0]
+        assert "REPLAY: unexpected" in report["serviceError"]
     finally:
         shutil.rmtree(tampered)
 

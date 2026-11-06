@@ -54,8 +54,9 @@ public class RegtestsAutoConfiguration {
         Events events = new Events(properties.getEvents());
         events.emit("REG-1", RegtestsAutoConfiguration.class, "Capture library switched on: mode " + mode.label(),
                 "REGTESTS_MODE=" + mode.label() + ". With off, none of this exists.");
-        Regtests regtests = new Regtests(mode, events, new Scrubber(properties.getSalt(), config), new Comparer(config),
-                new CaseFiles(properties.getRecordings()), Duration.ofSeconds(properties.getAsyncWaitSeconds()));
+        Regtests regtests = new Regtests(mode, events, new Scrubber(properties.getSalt(), config),
+                new CaseFiles(properties.getRecordings()), new CaseFiles(properties.getActual()),
+                Duration.ofSeconds(properties.getAsyncWaitSeconds()));
         OutboundHttp.activate(regtests);
         return regtests;
     }
