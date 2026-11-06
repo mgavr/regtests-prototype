@@ -119,6 +119,8 @@ function renderResult(state) {
   const verdict = byId("verdict");
   verdict.textContent = last.verdict;
   verdict.className = `verdict ${last.verdict.toLowerCase()}`;
+  // Stage 3 breaks the code on purpose, so its FAIL is the right answer.
+  byId("expected").hidden = !(last.stage === "break" && last.verdict === "FAIL");
 }
 
 function renderStatus(state) {

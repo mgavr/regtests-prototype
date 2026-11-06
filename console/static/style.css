@@ -206,3 +206,6 @@ footer {
 .code-text { height: 215px; font-size: 14px; }
 .diagram-now { font-size: 16px; }
 footer { padding-top: 3px; padding-bottom: 3px; font-size: 13px; }
+
+.expected-word { margin: 0; color: var(--good); font-size: 40px; font-weight: 800; line-height: 1.1; }
+.expected-why { margin: 2px 0 0; color: var(--good); font-size: 17px; }
