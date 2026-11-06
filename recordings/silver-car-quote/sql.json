@@ -1,0 +1,76 @@
+[ {
+  "seq" : 1,
+  "thread" : "http-nio-8081-exec-3",
+  "sql" : "{call get_customer( ?, ?, ?, ?, ?, ?)}",
+  "params" : [ 102 ],
+  "out" : [ {
+    "position" : 2,
+    "javaType" : "java.lang.String",
+    "value" : "masked:ca107fd76589"
+  }, {
+    "position" : 3,
+    "javaType" : "java.lang.String",
+    "value" : "masked:05e46d7ee848"
+  }, {
+    "position" : 4,
+    "javaType" : "java.lang.String",
+    "value" : "SOUTH"
+  }, {
+    "position" : 5,
+    "javaType" : "java.lang.String",
+    "value" : "SILVER"
+  }, {
+    "position" : 6,
+    "javaType" : "java.lang.Integer",
+    "value" : 1
+  } ],
+  "results" : [ {
+    "updateCount" : 2
+  } ]
+}, {
+  "seq" : 2,
+  "thread" : "http-nio-8081-exec-3",
+  "sql" : "{call get_discount_rules( ?, ?)}",
+  "params" : [ "SILVER" ],
+  "out" : [ {
+    "position" : 2,
+    "javaType" : "java.lang.Integer",
+    "value" : 1
+  } ],
+  "results" : [ {
+    "columns" : [ {
+      "name" : "rule",
+      "javaType" : "java.lang.String",
+      "sqlType" : 12
+    }, {
+      "name" : "discount",
+      "javaType" : "java.math.BigDecimal",
+      "sqlType" : 3
+    } ],
+    "rows" : [ [ "LOYALTY", 0.05 ] ]
+  }, {
+    "updateCount" : 1
+  } ]
+}, {
+  "seq" : 6,
+  "thread" : "http-nio-8081-exec-3",
+  "sql" : "{call create_quote( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}",
+  "params" : [ "f464b83f-825e-4c3e-940a-faf98f63e5b6", "Q-1793971574914", 102, "car", 18000.0, 793.47, "masked:482510412d39", "RS-bfb853b9", "2026-11-06T13:26:14.914" ],
+  "out" : [ {
+    "position" : 10,
+    "javaType" : "java.lang.Integer",
+    "value" : 1
+  } ],
+  "results" : [ {
+    "updateCount" : 1
+  } ]
+}, {
+  "seq" : 7,
+  "thread" : "task-2",
+  "sql" : "INSERT INTO audit_log (quote_id, action, detail, created_at) VALUES (?, ?, ?, ?)",
+  "params" : [ "f464b83f-825e-4c3e-940a-faf98f63e5b6", "QUOTE_ISSUED", "Premium 793.47", "2026-11-06T13:26:14.931017073" ],
+  "out" : [ ],
+  "results" : [ {
+    "updateCount" : 1
+  } ]
+} ]

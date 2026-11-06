@@ -1,0 +1,41 @@
+[ {
+  "seq" : 3,
+  "thread" : "http-nio-8081-exec-4",
+  "method" : "GET",
+  "url" : "http://localhost:8082/rates/travel?region=EAST",
+  "requestBody" : null,
+  "status" : 200,
+  "contentType" : "application/json",
+  "responseBody" : {
+    "product" : "travel",
+    "baseRate" : 0.0150
+  }
+}, {
+  "seq" : 4,
+  "thread" : "http-nio-8081-exec-4",
+  "method" : "GET",
+  "url" : "http://localhost:8082/fees/travel",
+  "requestBody" : null,
+  "status" : 200,
+  "contentType" : "application/json",
+  "responseBody" : {
+    "policyFee" : 25.00
+  }
+}, {
+  "seq" : 5,
+  "thread" : "reactor-http-epoll-4",
+  "method" : "POST",
+  "url" : "http://localhost:8082/risk-scores",
+  "requestBody" : {
+    "customerId" : 103,
+    "fullName" : "masked:38a9f4056da4",
+    "region" : "EAST",
+    "requestedAt" : "2026-11-06T13:26:14.992Z"
+  },
+  "status" : 200,
+  "contentType" : "application/json",
+  "responseBody" : {
+    "riskFactor" : 1.08,
+    "reference" : "RS-13ac3f0f"
+  }
+} ]

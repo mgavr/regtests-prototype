@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>regtests-prototype</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1>regtests-prototype</h1>
+      <p class="tagline">Test one service at a time, cut off at its edge.</p>
+    </div>
+    <div class="controls">
+      <button id="run" class="primary">Run</button>
+      <button id="next">Next</button>
+      <button id="restart">Restart</button>
+    </div>
+  </header>
+
+  <ol id="stages" class="stages"></ol>
+  <p id="status" class="status" role="status"></p>
+
+  <main>
+    <section class="steps-panel" aria-label="Steps">
+      <ol id="steps" class="steps"></ol>
+    </section>
+    <aside>
+      <section>
+        <h2>Processes right now</h2>
+        <table class="processes">
+          <tbody id="processes"></tbody>
+        </table>
+        <p class="note">Live: read from /proc inside the container.</p>
+      </section>
+      <section id="result" class="result" hidden>
+        <h2>Result</h2>
+        <p id="verdict" class="verdict"></p>
+      </section>
+    </aside>
+  </main>
+
+  <footer>
+    Every step is a real event from this run, stamped with the time it happened. The run goes at full
+    speed, so its events are held here and shown one at a time.
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

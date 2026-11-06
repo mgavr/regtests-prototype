@@ -1,0 +1,24 @@
+{
+  "live": {
+    "case": "live-quote",
+    "body": { "customerId": 101, "product": "home", "coverAmount": 250000.00, "contactPhone": "555-0199" }
+  },
+  "examples": [
+    {
+      "case": "gold-home-quote",
+      "body": { "customerId": 101, "product": "home", "coverAmount": 250000.00, "contactPhone": "555-0199" }
+    },
+    {
+      "case": "silver-car-quote",
+      "body": { "customerId": 102, "product": "car", "coverAmount": 18000.00, "contactPhone": "555-0188" }
+    },
+    {
+      "case": "standard-travel-quote",
+      "body": { "customerId": 103, "product": "travel", "coverAmount": 5000.00, "contactPhone": "555-0177" }
+    },
+    {
+      "case": "unknown-customer",
+      "body": { "customerId": 999, "product": "home", "coverAmount": 100000.00, "contactPhone": "555-0166" }
+    }
+  ]
+}

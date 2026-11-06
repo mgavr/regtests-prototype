@@ -1,0 +1,30 @@
+{
+  "case" : "standard-travel-quote",
+  "requestId" : "174166a2",
+  "recordedAt" : "2026-11-06T13:26:15.011004843Z",
+  "request" : {
+    "method" : "POST",
+    "path" : "/quotes",
+    "contentType" : "application/json",
+    "body" : {
+      "customerId" : 103,
+      "product" : "travel",
+      "coverAmount" : 5000.0,
+      "contactPhone" : "masked:edb700e41b5c"
+    }
+  },
+  "response" : {
+    "status" : 200,
+    "contentType" : "application/json",
+    "body" : {
+      "quoteId" : "27d6f749-bfd9-4ffe-baa4-95ca95b5ad41",
+      "quoteNumber" : "Q-1793971574992",
+      "customerName" : "masked:38a9f4056da4",
+      "product" : "travel",
+      "premium" : 106.00,
+      "currency" : "USD",
+      "riskReference" : "RS-13ac3f0f",
+      "createdAt" : "2026-11-06T13:26:14.992Z"
+    }
+  }
+}

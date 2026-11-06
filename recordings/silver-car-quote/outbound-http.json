@@ -1,0 +1,41 @@
+[ {
+  "seq" : 3,
+  "thread" : "http-nio-8081-exec-3",
+  "method" : "GET",
+  "url" : "http://localhost:8082/rates/car?region=SOUTH",
+  "requestBody" : null,
+  "status" : 200,
+  "contentType" : "application/json",
+  "responseBody" : {
+    "product" : "car",
+    "baseRate" : 0.0420
+  }
+}, {
+  "seq" : 4,
+  "thread" : "http-nio-8081-exec-3",
+  "method" : "GET",
+  "url" : "http://localhost:8082/fees/car",
+  "requestBody" : null,
+  "status" : 200,
+  "contentType" : "application/json",
+  "responseBody" : {
+    "policyFee" : 25.00
+  }
+}, {
+  "seq" : 5,
+  "thread" : "reactor-http-epoll-4",
+  "method" : "POST",
+  "url" : "http://localhost:8082/risk-scores",
+  "requestBody" : {
+    "customerId" : 102,
+    "fullName" : "masked:ca107fd76589",
+    "region" : "SOUTH",
+    "requestedAt" : "2026-11-06T13:26:14.914Z"
+  },
+  "status" : 200,
+  "contentType" : "application/json",
+  "responseBody" : {
+    "riskFactor" : 1.07,
+    "reference" : "RS-bfb853b9"
+  }
+} ]

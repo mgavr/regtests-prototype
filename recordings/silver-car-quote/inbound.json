@@ -1,0 +1,30 @@
+{
+  "case" : "silver-car-quote",
+  "requestId" : "075239e9",
+  "recordedAt" : "2026-11-06T13:26:14.932882903Z",
+  "request" : {
+    "method" : "POST",
+    "path" : "/quotes",
+    "contentType" : "application/json",
+    "body" : {
+      "customerId" : 102,
+      "product" : "car",
+      "coverAmount" : 18000.0,
+      "contactPhone" : "masked:482510412d39"
+    }
+  },
+  "response" : {
+    "status" : 200,
+    "contentType" : "application/json",
+    "body" : {
+      "quoteId" : "f464b83f-825e-4c3e-940a-faf98f63e5b6",
+      "quoteNumber" : "Q-1793971574914",
+      "customerName" : "masked:ca107fd76589",
+      "product" : "car",
+      "premium" : 793.47,
+      "currency" : "USD",
+      "riskReference" : "RS-bfb853b9",
+      "createdAt" : "2026-11-06T13:26:14.914Z"
+    }
+  }
+}

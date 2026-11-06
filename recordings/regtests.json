@@ -1,0 +1,11 @@
+{
+  "normalize": { "timestamps": true, "uuids": true },
+  "ignore": {
+    "jsonPaths": ["$.quoteNumber"],
+    "sqlParams": { "create_quote": [2] }
+  },
+  "personal": {
+    "fields": ["customerName", "contactPhone"],
+    "sqlParams": { "get_customer": [2, 3], "create_quote": [7] }
+  }
+}

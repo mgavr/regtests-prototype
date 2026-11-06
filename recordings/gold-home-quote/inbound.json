@@ -1,0 +1,30 @@
+{
+  "case" : "gold-home-quote",
+  "requestId" : "11a18046",
+  "recordedAt" : "2026-11-06T13:26:14.854448436Z",
+  "request" : {
+    "method" : "POST",
+    "path" : "/quotes",
+    "contentType" : "application/json",
+    "body" : {
+      "customerId" : 101,
+      "product" : "home",
+      "coverAmount" : 250000.0,
+      "contactPhone" : "masked:8956c2d27658"
+    }
+  },
+  "response" : {
+    "status" : 200,
+    "contentType" : "application/json",
+    "body" : {
+      "quoteId" : "a5024cce-3a76-4974-a23b-c7874e0b4fcc",
+      "quoteNumber" : "Q-1793971574424",
+      "customerName" : "masked:c3d92777e9b1",
+      "product" : "home",
+      "premium" : 764.35,
+      "currency" : "USD",
+      "riskReference" : "RS-90b88661",
+      "createdAt" : "2026-11-06T13:26:14.424Z"
+    }
+  }
+}

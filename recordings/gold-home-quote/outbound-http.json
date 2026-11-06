@@ -1,0 +1,41 @@
+[ {
+  "seq" : 3,
+  "thread" : "http-nio-8081-exec-2",
+  "method" : "GET",
+  "url" : "http://localhost:8082/rates/home?region=NORTH",
+  "requestBody" : null,
+  "status" : 200,
+  "contentType" : "application/json",
+  "responseBody" : {
+    "product" : "home",
+    "baseRate" : 0.0031
+  }
+}, {
+  "seq" : 4,
+  "thread" : "http-nio-8081-exec-2",
+  "method" : "GET",
+  "url" : "http://localhost:8082/fees/home",
+  "requestBody" : null,
+  "status" : 200,
+  "contentType" : "application/json",
+  "responseBody" : {
+    "policyFee" : 25.00
+  }
+}, {
+  "seq" : 5,
+  "thread" : "reactor-http-epoll-4",
+  "method" : "POST",
+  "url" : "http://localhost:8082/risk-scores",
+  "requestBody" : {
+    "customerId" : 101,
+    "fullName" : "masked:c3d92777e9b1",
+    "region" : "NORTH",
+    "requestedAt" : "2026-11-06T13:26:14.424Z"
+  },
+  "status" : 200,
+  "contentType" : "application/json",
+  "responseBody" : {
+    "riskFactor" : 1.06,
+    "reference" : "RS-90b88661"
+  }
+} ]

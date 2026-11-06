@@ -1,0 +1,17 @@
+{
+  "name": "regtests-prototype",
+  "image": "maven:3.9-eclipse-temurin-17",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "forwardPorts": [8080, 5005],
+  "portsAttributes": {
+    "8080": { "label": "Live view" },
+    "5005": { "label": "Debugger (only with DEBUG=1)", "onAutoForward": "silent" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["vscjava.vscode-java-pack"]
+    }
+  }
+}

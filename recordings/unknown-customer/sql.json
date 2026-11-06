@@ -1,0 +1,30 @@
+[ {
+  "seq" : 1,
+  "thread" : "http-nio-8081-exec-5",
+  "sql" : "{call get_customer( ?, ?, ?, ?, ?, ?)}",
+  "params" : [ 999 ],
+  "out" : [ {
+    "position" : 2,
+    "javaType" : null,
+    "value" : null
+  }, {
+    "position" : 3,
+    "javaType" : null,
+    "value" : null
+  }, {
+    "position" : 4,
+    "javaType" : null,
+    "value" : null
+  }, {
+    "position" : 5,
+    "javaType" : null,
+    "value" : null
+  }, {
+    "position" : 6,
+    "javaType" : "java.lang.Integer",
+    "value" : 0
+  } ],
+  "results" : [ {
+    "updateCount" : 1
+  } ]
+} ]

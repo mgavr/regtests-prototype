@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- REG-5: stored procedures through MyBatis, with IN and OUT parameters and a result set. MyBatis ends up calling JDBC, and that is all the hook ever sees. -->
+<mapper namespace="example.quotes.QuoteMapper">
+
+    <select id="getCustomer" statementType="CALLABLE">
+        {call get_customer(
+            #{customerId, mode=IN, jdbcType=BIGINT},
+            #{fullName, mode=OUT, jdbcType=VARCHAR},
+            #{phone, mode=OUT, jdbcType=VARCHAR},
+            #{region, mode=OUT, jdbcType=VARCHAR},
+            #{tier, mode=OUT, jdbcType=VARCHAR},
+            #{found, mode=OUT, jdbcType=INTEGER})}
+    </select>
+
+    <select id="getDiscountRules" statementType="CALLABLE" resultType="example.quotes.QuoteCalls$DiscountRule">
+        {call get_discount_rules(
+            #{tier, mode=IN, jdbcType=VARCHAR},
+            #{ruleCount, mode=OUT, jdbcType=INTEGER})}
+    </select>
+
+    <update id="createQuote" statementType="CALLABLE">
+        {call create_quote(
+            #{id, mode=IN, jdbcType=VARCHAR},
+            #{quoteNumber, mode=IN, jdbcType=VARCHAR},
+            #{customerId, mode=IN, jdbcType=BIGINT},
+            #{product, mode=IN, jdbcType=VARCHAR},
+            #{coverAmount, mode=IN, jdbcType=DECIMAL},
+            #{premium, mode=IN, jdbcType=DECIMAL},
+            #{contactPhone, mode=IN, jdbcType=VARCHAR},
+            #{riskReference, mode=IN, jdbcType=VARCHAR},
+            #{createdAt, mode=IN, jdbcType=TIMESTAMP},
+            #{rowsInserted, mode=OUT, jdbcType=INTEGER})}
+    </update>
+
+</mapper>

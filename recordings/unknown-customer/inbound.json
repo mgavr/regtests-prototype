@@ -1,0 +1,24 @@
+{
+  "case" : "unknown-customer",
+  "requestId" : "a0264ff2",
+  "recordedAt" : "2026-11-06T13:26:15.078769136Z",
+  "request" : {
+    "method" : "POST",
+    "path" : "/quotes",
+    "contentType" : "application/json",
+    "body" : {
+      "customerId" : 999,
+      "product" : "home",
+      "coverAmount" : 100000.0,
+      "contactPhone" : "masked:d6688d32ab82"
+    }
+  },
+  "response" : {
+    "status" : 404,
+    "contentType" : "application/json",
+    "body" : {
+      "error" : "customer not found",
+      "customerId" : 999
+    }
+  }
+}
