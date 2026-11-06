@@ -375,7 +375,7 @@ planned, so comparison rules live in one place. A library only records and answe
 **Shared by every language, written once:**
 
 - The Python tests in `tests/`, which send each recorded request and read back the run.
-- The test generator: `discover_cases()` in `tests/test_replay.py` makes one test per case folder,
+- Test discovery: `discover_cases()` in `tests/test_replay.py` makes one test per case folder,
   so nobody writes a test by hand.
 - All comparing, in `tests/compare.py`: the normaliser, the `regtests.json` rules, the expected and
   got report, and unexpected and never-made calls.
