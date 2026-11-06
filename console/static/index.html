@@ -22,6 +22,17 @@
   <ol id="stages" class="stages"></ol>
   <p id="status" class="status" role="status"></p>
 
+  <section class="live">
+    <div class="diagram" aria-label="Who is calling whom">
+      <div id="diagram-art"></div>
+      <p id="diagram-now" class="diagram-now"></p>
+    </div>
+    <div class="code-panel" aria-label="The code behind this step">
+      <p id="code-file" class="code-file"></p>
+      <pre id="code-text" class="code-text"></pre>
+    </div>
+  </section>
+
   <main>
     <section class="steps-panel" aria-label="Steps">
       <ol id="steps" class="steps"></ol>
@@ -46,5 +57,6 @@
     speed, so its events are held here and shown one at a time.
   </footer>
   <script src="app.js"></script>
+  <script src="diagram.js"></script>
 </body>
 </html>

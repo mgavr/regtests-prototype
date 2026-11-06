@@ -24,7 +24,7 @@ JAVA = ["java", "-XX:TieredStopAtLevel=1", "-XX:+UseSerialGC", "-Xmx256m"]
 # name -> (what to show, text that identifies the process in /proc, port)
 KNOWN = {
     "database": ("MariaDB database", "mariadbd", DB_PORT),
-    "partner": ("Fake partner", "fake-partner.jar", PARTNER_PORT),
+    "partner": ("Fake partner service", "fake-partner.jar", PARTNER_PORT),
     "service": ("Demo service", "demo-service.jar", SERVICE_PORT),
 }
 

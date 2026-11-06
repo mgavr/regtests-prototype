@@ -83,7 +83,7 @@ class Demo:
         self.pending = []
         shutil.rmtree(RECORDINGS, ignore_errors=True)
         seed_config(RECORDINGS)
-        # REG-2: the real thing. MariaDB and the fake partner each run as their own process, and the service connects to both.
+        # REG-2: the real thing. MariaDB and the fake partner service each run as their own process, and the service connects to both.
         self.processes.start_database()
         self.processes.start_partner()
         self.processes.start_service("record", RECORDINGS)
@@ -126,7 +126,7 @@ class Demo:
     def show_what_is_up(self):
         rows = {row["name"]: row for row in self.processes.snapshot()}
         self.say("REG-2", THIS_FILE, "Database is up", f"MariaDB is its own process, pid {rows['database']['pid']}, port {DB_PORT}.")
-        self.say("REG-2", THIS_FILE, "Partner is up", f"The fake partner is its own process, pid {rows['partner']['pid']}, port {PARTNER_PORT}.")
+        self.say("REG-2", THIS_FILE, "Fake partner service is up", f"The fake partner service is its own process, pid {rows['partner']['pid']}, port {PARTNER_PORT}.")
         self.say("REG-1", AUTOCONFIG, "Service is up in record mode", f"pid {rows['service']['pid']}, REGTESTS_MODE=record.")
 
     def send_live_request(self):
@@ -143,7 +143,7 @@ class Demo:
     def stop_partner(self):
         pid = self.processes.running["partner"].pid
         self.processes.stop("partner")
-        self.say("REG-14", THIS_FILE, "Partner stopped", f"Process {pid} has exited.", "stop")
+        self.say("REG-14", THIS_FILE, "Fake partner service stopped", f"Process {pid} has exited.", "stop")
 
     def prove_they_are_down(self):
         left = find_pids("mariadbd") + find_pids("fake-partner.jar")

@@ -17,7 +17,8 @@ own code runs for real. Everything it calls is answered from a file.
               saved to files                              compared with those files
 ```
 
-You can watch all of this happen, live, on a page in your browser.
+You can watch all of this happen, live, on a page in your browser: a diagram of who is calling
+whom, and the code behind each step.
 
 ## What you need
 
@@ -52,7 +53,7 @@ happen for real when their step comes up.
 
 ## The three stages
 
-**1. Record.** MariaDB and a fake partner are running, each as its own process. One real request
+**1. Record.** MariaDB and a fake partner service are running, each as its own process. One real request
 arrives at `POST /quotes`. You see it get a request id, then each database call and partner call
 captured under that id. Personal data is masked. The response goes back and the case is saved to
 disk.

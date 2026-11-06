@@ -147,6 +147,7 @@ function render(state) {
   renderResult(state);
   renderStatus(state);
   renderControls(state);
+  if (typeof renderDiagram === "function") renderDiagram(state);
   if (grew) byId("steps").lastElementChild?.scrollIntoView({ block: "end" });
 }
 

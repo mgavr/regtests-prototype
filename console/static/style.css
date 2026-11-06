@@ -154,3 +154,55 @@ footer {
   main { grid-template-columns: minmax(0, 1fr); padding: 10px 16px; }
   footer { padding: 8px 16px; }
 }
+
+.live {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 20px;
+  padding: 0 28px 6px;
+}
+.diagram svg { display: block; width: 100%; max-height: 250px; }
+.diagram .box { fill: var(--wash); stroke: var(--line); stroke-width: 2; }
+.diagram .group { fill: var(--muted); font-size: 19px; font-weight: 600; }
+.diagram .node rect { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
+.diagram .node text { fill: var(--ink); font-size: 22px; font-weight: 600; }
+.diagram .node text.sub { fill: var(--muted); font-size: 18px; font-weight: 400; }
+.diagram .node.on rect { fill: var(--accent-wash); stroke: var(--accent); stroke-width: 4; }
+.diagram .node.down rect { fill: var(--bad-wash); stroke: var(--bad); stroke-dasharray: 8 6; }
+.diagram .node.down text.sub { fill: var(--bad); font-weight: 700; }
+.diagram .arrow { fill: none; stroke: var(--line); stroke-width: 3; }
+.diagram .arrow.on { stroke: var(--accent); stroke-width: 5; }
+.diagram .arrow.cut { stroke: var(--bad); stroke-dasharray: 6 8; }
+.diagram .tip { fill: var(--line); }
+.diagram .tip-on { fill: var(--accent); }
+.diagram .tip-cut { fill: var(--bad); }
+.diagram-now { margin: 2px 0 0; font-size: 18px; font-weight: 600; text-align: center; }
+
+.code-panel { display: flex; flex-direction: column; min-width: 0; }
+.code-file { margin: 0 0 4px; font: 600 15px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.code-text {
+  flex: 1;
+  height: 240px;
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: var(--wash);
+  font: 15px/1.35 var(--mono);
+}
+
+@media (max-width: 1000px) {
+  .live { grid-template-columns: 1fr; }
+}
+
+/* Keep the stages small, so the live picture and the steps both fit on a laptop screen. */
+.stages { margin-top: 6px; margin-bottom: 4px; }
+.stages li { padding: 5px 12px; }
+.stages strong { display: inline; margin-right: 8px; font-size: 19px; }
+.stages span { font-size: 15px; }
+.status { margin-top: 0; margin-bottom: 2px; font-size: 16px; }
+.diagram svg { max-height: 225px; }
+.code-text { height: 215px; font-size: 14px; }
+.diagram-now { font-size: 16px; }
+footer { padding-top: 3px; padding-bottom: 3px; font-size: 13px; }

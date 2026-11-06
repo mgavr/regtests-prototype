@@ -29,6 +29,12 @@ COPY demo-service/db/seed.sql db/
 COPY console console
 COPY tests tests
 COPY recordings recordings
+# The live page shows the code behind each step, taken from the REG pointers in the source.
+COPY regtests-capture-starter/src/main source/regtests-capture-starter/src/main
+COPY demo-service/src/main source/demo-service/src/main
+COPY tests source/tests
+COPY console/stages.py source/console/stages.py
+RUN python3 console/make_snippets.py source console/static/snippets.json
 
 EXPOSE 8080
 ENTRYPOINT ["python3", "/app/console/cli.py"]
