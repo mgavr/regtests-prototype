@@ -17,6 +17,9 @@ own code runs for real. Everything it calls is answered from a file.
               saved to files                              compared with those files
 ```
 
+Record runs once, in UAT. Replay needs no environment, so it's cheap enough to run on every build:
+in CI, in CD, or after rehydration.
+
 You can watch all of this happen, live, on a page in your browser: a diagram of who is calling
 whom, and the code behind each step.
 
@@ -76,7 +79,13 @@ Database call INSERT INTO audit_log parameter 3: expected "Premium 764.35", got 
 Response $.premium: expected 764.35, got 928.65
 ```
 
-Nobody wrote an assertion about the premium. The recording is the assertion.
+Nobody wrote an assertion about the premium. The recording holds every expected value, so the
+recording is the test. When a case fails, there are two choices:
+
+- **A bug:** fix the code.
+- **An intended change:** update the expected values. They're in the recording, so record the case
+  again, or edit them by hand: the response in `inbound.json`, and the values sent in `sql.json`
+  and `outbound-http.json`. Either way, that becomes the new baseline.
 
 ## What a team has to do
 
@@ -93,9 +102,9 @@ it: it has no line of code that knows about any of this, and a build check
 ```
 
 ```
-REGTESTS_MODE=off      the default: nothing is created, nothing changes
-REGTESTS_MODE=record   capture real traffic into files
-REGTESTS_MODE=replay   answer everything from those files
+REGTESTS_MODE=off      the default, and production: nothing is created, nothing changes
+REGTESTS_MODE=record   in UAT: capture real traffic into files
+REGTESTS_MODE=replay   in CI, CD or after rehydration: answer everything from those files
 ```
 
 Spring Boot auto-configuration does the wiring. The only assumption is Spring Boot 3. How a team
@@ -139,8 +148,8 @@ Recorded but never made: GET /fees/home
 The service failed with: ... I/O error on GET request for "http://localhost:8082/fees/home": Connection refused
 ```
 
-In this demo the partner being down guarantees that. In your CI, run replay with no network, for
-example `docker run --network none`. Otherwise an unhooked client could reach a real host and pass
+In this demo the partner being down guarantees that. Wherever you run replay, in CI, CD or after
+rehydration, run it with no network, for example `docker run --network none`. Otherwise an unhooked client could reach a real host and pass
 without anyone noticing.
 
 Three things are optional. `REGTESTS_RECORDINGS` sets the recordings folder (default `recordings`).
@@ -355,17 +364,17 @@ this tour only, and a real service needs none.
 
 1. Build the starter and publish it to your Maven repository (`mvn install` for a local try), then
    add the dependency.
-2. Start your service in a test environment with `REGTESTS_MODE=record`.
+2. Start your service in UAT with `REGTESTS_MODE=record`.
 3. Send it requests. Add the header `X-Regtests-Case: some-name` to name a case. Without it, a case
    gets a generated name.
 4. Read the recordings. Check that no personal data got through, and fill in `regtests.json`.
 5. Commit the recordings.
-6. In CI, start the new build with `REGTESTS_MODE=replay` and no network, then run
+6. In CI, CD or after rehydration, start the new build with `REGTESTS_MODE=replay` and no network, then run
    `tests/test_replay.py` with `SERVICE_URL`, `REGTESTS_RECORDINGS` and `REGTESTS_ACTUAL` set. The
    test reads what the service writes, so both need to see those two folders. Change the two ports
    in `test_database_and_partner_are_down` to match your service.
 
-Run `record` in a test environment only. It keeps bodies and rows in memory and writes them to disk.
+Run `record` in UAT only. It keeps bodies and rows in memory and writes them to disk.
 
 ## Other languages
 
@@ -407,13 +416,37 @@ planned, so comparison rules live in one place. A library only records and answe
 
 A library must not compare anything, normalise anything or decide pass or fail.
 
+## Calls during startup: the approach
+
+**Designed, not built yet.** Some services call out while they start: they read reference data,
+fetch a token, run schema migrations, or load their config from a config server. Today those calls
+can't be replayed, because there's no request to tie them to, so replay fails loudly on them.
+
+```
+ service starts --> [ startup: until Spring says the service is ready ] --> requests, one case each
+                      record, in UAT: startup calls saved as one recording
+                      replay: that recording answers them first
+```
+
+1. **A startup session.** Until Spring reports the service ready, a startup session stands in for
+   the request, so every call made then belongs to it.
+2. **Record, in UAT.** Every startup call is saved as one startup recording, next to the cases and
+   masked the same way.
+3. **Replay.** That recording is loaded first and answers the startup calls, so the service starts
+   with no database and no network. Then each case is answered from its own recording, as today.
+4. **Migrations.** Flyway and Liquibase are switched off in replay. With no database, there's no
+   schema to build.
+5. **Config server.** It's called before the hooks exist, so replay reads a saved copy of the
+   config instead.
+6. **Fails loudly.** A new or changed startup call stops replay, naming the call.
+
 ## Known limits
 
 This is a prototype. Where something isn't handled, it aims to fail loudly.
 
 **Startup**
-- A service that reads data or calls out during startup needs those calls recorded too, and that
-  isn't covered yet. This includes Flyway or Liquibase migrations, and config servers.
+- Calls during startup aren't covered yet. The approach is designed: see
+  [Calls during startup](#calls-during-startup-the-approach).
 
 **Which clients are caught**
 - Anything built with `new` inside a method, and clients other than Spring's, aren't hooked, apart
@@ -444,6 +477,8 @@ This is a prototype. Where something isn't handled, it aims to fail loudly.
 | Kafka | `ProducerInterceptor`, or a `BeanPostProcessor` around `KafkaTemplate` |
 | JMS and other MQ | A `BeanPostProcessor` around `JmsTemplate` or the `ConnectionFactory` |
 | Redis | A `BeanPostProcessor` around `RedisConnectionFactory` |
+| MongoDB | A `BeanPostProcessor` around the `MongoClient` bean |
+| Cassandra | A `BeanPostProcessor` around the `CqlSession` bean |
 | SOAP | A `ClientInterceptor` on `WebServiceTemplate`, through `WebServiceTemplateCustomizer` |
 | gRPC | A `ClientInterceptor` on the channel |
 | Files | No single Spring hook. It needs a wrapper around the team's storage code |
@@ -492,4 +527,4 @@ service restarts between stages, so attach again after each restart.
 | The build fails at `mvn verify` | A unit test failed. The test name is in the output. `NoCaptureCodeTest` means code in `demo-service` mentions the library |
 | `io_uring` warning in `database.log` | Harmless. MariaDB falls back on its own |
 | Ctrl+C doesn't stop it | Run `docker ps`, then `docker stop <id>` |
-| A case fails after you changed the service on purpose | That's the point. If the new behaviour is right, record the case again |
+| A case fails after you changed the service on purpose | That's the point. If the new behaviour is right, update the expected values: record the case again, or edit them in the recording by hand |
